@@ -1131,6 +1131,13 @@ class quiz_attempt {
         return $this->page_and_question_url('review', $slot, $page, $showall, $thispage);
     }
 
+    /**
+     * @return string the URL of this attempt's print preview page.
+     */
+    public function printpreview_url() {
+        return new moodle_url('/mod/quiz/printpreview.php', array('attempt' => $this->attempt->id));
+    }
+
     // Bits of content =========================================================
 
     /**
@@ -1225,6 +1232,18 @@ class quiz_attempt {
         $options = $this->get_display_options(true);
         $options->hide_all_feedback();
         $options->manualcomment = question_display_options::EDITABLE;
+        return $this->quba->render_question($slot, $options,
+                $this->get_question_number($slot));
+    }
+
+    /**
+     * Wrapper for a print-suitable render of a question
+     * @param integer $slot the question slot to render
+     * @return string the HTML markup
+     */
+    public function render_question_for_print($slot) {
+        $options = $this->get_display_options(true);
+        $options->flags = question_display_options::HIDDEN;
         return $this->quba->render_question($slot, $options,
                 $this->get_question_number($slot));
     }
@@ -1757,7 +1776,13 @@ class quiz_attempt_nav_panel extends quiz_nav_panel_base {
         return html_writer::link($this->attemptobj->summary_url(),
                 get_string('endtest', 'quiz'), array('class' => 'endtestlink')) .
                 $output->countdown_timer($this->attemptobj, time()) .
-                $this->render_restart_preview_link($output);
+                $this->render_restart_preview_link($output) .
+                $this->render_print_preview($output);
+    }
+
+    private function render_print_preview(mod_quiz_renderer $output) {
+        $url = new moodle_url($this->attemptobj->printpreview_url());
+        return $output->single_button($url, get_string('printpreview', 'quiz'));
     }
 }
 

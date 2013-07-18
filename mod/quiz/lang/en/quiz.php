@@ -578,6 +578,7 @@ $string['previewquestion'] = 'Preview question';
 $string['previewquiz'] = 'Preview {$a}';
 $string['previewquiznow'] = 'Preview quiz now';
 $string['previous'] = 'Previous state';
+$string['printpreview'] = 'View for printing';
 $string['publish'] = 'Publish';
 $string['publishedit'] = 'You must have permission in the publishing course to add or edit questions in this category';
 $string['qname'] = 'name';

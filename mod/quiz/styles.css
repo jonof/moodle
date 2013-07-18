@@ -1317,3 +1317,20 @@ bank window's title is prominent enough*/
     direction: ltr;
     text-align: left;
 }
+
+#page-mod-quiz-printpreview .close-preview {
+    text-align: center;
+    margin: 1em;
+}
+#page-mod-quiz-printpreview .que .state {
+    display: none;
+}
+@media print {
+    #page-mod-quiz-printpreview .que {
+        page-break-inside: avoid;
+    }
+    #page-mod-quiz-printpreview .close-preview {
+        display: none;
+    }
+}
+
