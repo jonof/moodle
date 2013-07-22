@@ -27,6 +27,7 @@ require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 
 // Get submitted parameters.
 $attemptid = required_param('attempt', PARAM_INT);
+$showanswers = optional_param('showanswers', false, PARAM_BOOL);
 
 $attemptobj = quiz_attempt::create($attemptid);
 $PAGE->set_url($attemptobj->printpreview_url());
@@ -89,10 +90,25 @@ echo $output->heading($attemptobj->get_quiz_name());
 if ($attemptobj->get_navigation_method() != QUIZ_NAVMETHOD_FREE) {
     echo $output->notification(get_string('printpreviewnavmethodwrong', 'quiz'));
 }
-echo $output->single_button($attemptobj->attempt_url(), get_string('closepreview', 'quiz'), 'get', array('class' => 'close-preview'));
+
+$closebutton = new single_button($attemptobj->attempt_url(), get_string('closepreview', 'quiz'), 'get');
+$answersbutton = null;
+if ($attemptobj->is_preview() && $attemptobj->is_preview_user()) {
+    $answerslabel = $showanswers ? 'printpreviewhideanswers' : 'printpreviewshowanswers';
+    $answersbutton = new single_button(new moodle_url($PAGE->url, array('showanswers' => !$showanswers)),
+            get_string($answerslabel, 'quiz'), 'post');
+}
+$buttonmarkup = $output->render($closebutton);
+if ($answersbutton) {
+    $buttonmarkup .= $output->render($answersbutton);
+}
+echo html_writer::tag('div', $buttonmarkup, array('class' => 'buttons preview-buttons'));
 
 // Print all the questions.
 foreach ($slots as $slot) {
+    if ($attemptobj->is_preview() && $attemptobj->is_preview_user() && $showanswers) {
+        $attemptobj->set_correct_question_response($slot);
+    }
     echo $attemptobj->render_question_for_print($slot, true);
 }
 

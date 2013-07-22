@@ -1249,6 +1249,17 @@ class quiz_attempt {
     }
 
     /**
+     * Mark the correct responses for a question
+     * @param integer $slot the question slot to process
+     */
+    public function set_correct_question_response($slot) {
+        $correctresponse = $this->quba->get_correct_response($slot);
+        if (!is_null($correctresponse)) {
+            $this->quba->process_action($slot, $correctresponse);
+        }
+    }
+
+    /**
      * Check wheter access should be allowed to a particular file.
      *
      * @param int $id the id of a question in this quiz attempt.

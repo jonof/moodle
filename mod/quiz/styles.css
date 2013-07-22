@@ -1318,9 +1318,8 @@ bank window's title is prominent enough*/
     text-align: left;
 }
 
-#page-mod-quiz-printpreview .close-preview {
+#page-mod-quiz-printpreview .preview-buttons {
     text-align: center;
-    margin: 1em;
 }
 #page-mod-quiz-printpreview .que .state {
     display: none;
@@ -1329,7 +1328,7 @@ bank window's title is prominent enough*/
     #page-mod-quiz-printpreview .que {
         page-break-inside: avoid;
     }
-    #page-mod-quiz-printpreview .close-preview {
+    #page-mod-quiz-printpreview .preview-buttons {
         display: none;
     }
 }
