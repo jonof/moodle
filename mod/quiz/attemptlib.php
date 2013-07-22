@@ -1781,6 +1781,10 @@ class quiz_attempt_nav_panel extends quiz_nav_panel_base {
     }
 
     private function render_print_preview(mod_quiz_renderer $output) {
+        if ($this->attemptobj->get_navigation_method() != QUIZ_NAVMETHOD_FREE &&
+                !$this->attemptobj->is_preview_user()) {
+            return '';
+        }
         $url = new moodle_url($this->attemptobj->printpreview_url());
         return $output->single_button($url, get_string('printpreview', 'quiz'));
     }

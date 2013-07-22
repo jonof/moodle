@@ -61,6 +61,11 @@ if ($accessmanager->is_preflight_check_required($attemptobj->get_attemptid())) {
     redirect($attemptobj->start_attempt_url(null, $page));
 }
 
+// Check that the navigation method allows previewing for print, or that the user can preview.
+if ($attemptobj->get_navigation_method() != QUIZ_NAVMETHOD_FREE && !$attemptobj->is_preview_user()) {
+    print_error('printpreviewnavmethodwrong', 'quiz');
+}
+
 // Log this page view.
 add_to_log($attemptobj->get_courseid(), 'quiz', 'print preview',
         'printpreview.php?attempt=' . $attemptobj->get_attemptid(),
@@ -81,6 +86,9 @@ $PAGE->set_pagelayout('print');
 echo $output->header();
 echo $output->heading($attemptobj->get_quiz_name());
 
+if ($attemptobj->get_navigation_method() != QUIZ_NAVMETHOD_FREE) {
+    echo $output->notification(get_string('printpreviewnavmethodwrong', 'quiz'));
+}
 echo $output->single_button($attemptobj->attempt_url(), get_string('closepreview', 'quiz'), 'get', array('class' => 'close-preview'));
 
 // Print all the questions.
