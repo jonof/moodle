@@ -24,6 +24,7 @@
 
 $string['addmorechoiceblanks'] = 'Blanks for {no} more choices';
 $string['addcategory'] = 'Add category';
+$string['addquestionstoquiz'] = 'Add questions to quiz';
 $string['adminreport'] = 'Report on possible problems in your question database.';
 $string['answers'] = 'Answers';
 $string['availableq'] = 'Available?';

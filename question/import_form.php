@@ -89,6 +89,11 @@ class question_import_form extends moodleform {
         $mform->setDefault('stoponerror', 1);
         $mform->addHelpButton('stoponerror', 'stoponerror', 'question');
 
+        if ($contexts[0]->contextlevel == CONTEXT_MODULE) {
+            $mform->addElement('selectyesno', 'addtoquiz', get_string('addquestionstoquiz', 'question'));
+            $mform->setDefault('addtoquiz', 0);
+        }
+
         // The file to import
         $mform->addElement('header', 'importfileupload', get_string('importquestions', 'question'));
 

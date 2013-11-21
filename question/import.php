@@ -125,6 +125,31 @@ if ($form = $import_form->get_data()) {
         print_error('cannotimport', '', $thispageurl->out());
     }
 
+    // Add the questions to a new page at the end of the current quiz
+    if (!empty($form->addtoquiz) && $cm && $cm->modname == 'quiz') {
+        require_once $CFG->dirroot . '/mod/quiz/editlib.php';
+
+        $pagenum = quiz_number_of_pages($module->questions) + 1;
+        $structure = $qformat->get_quiz_structure();
+
+        if ($structure) {
+            foreach ($structure as $item) {
+                switch ($item->type) {
+                    case 'random':
+                        quiz_add_random_questions($module, $pagenum, $item->categoryid, $item->count, false);
+                        break;
+                    case 'question':
+                        quiz_add_quiz_question($item->questionid, $module, $pagenum);
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            quiz_update_sumgrades($module);
+        }
+    }
+
     $params = $thispageurl->params() + array(
         'category' => $qformat->category->id . ',' . $qformat->category->contextid);
     echo $OUTPUT->continue_button(new moodle_url('edit.php', $params));

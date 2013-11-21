@@ -54,6 +54,9 @@ class qformat_default {
 
     protected $importcontext = null;
 
+    private $structure = array();
+    protected $isstructureaware = false;    // override this in subclasses that implement structure-aware importing
+
     // functions to indicate import/export functionality
     // override to return true if implemented
 
@@ -305,6 +308,16 @@ class qformat_default {
             return false;
         }
 
+        if (!$this->isstructureaware) {
+            // A format that is not structure-aware will incur this automatic
+            // adding of all its questions to a quiz structure
+            foreach ($questions as $question) {
+                if ($question->qtype != 'category') {
+                    $question->importhandle = $this->add_question_to_structure($question);
+                }
+            }
+        }
+
         // STAGE 2: Write data to database
         echo $OUTPUT->notification(get_string('importingquestions', 'question',
                 $this->count_questions($questions)), 'notifysuccess');
@@ -369,6 +382,10 @@ class qformat_default {
                     $newcategory = $this->create_category_path($catpath);
                     if (!empty($newcategory)) {
                         $this->category = $newcategory;
+
+                        if (isset($question->importhandle)) {
+                            $this->map_structure_element($question->importhandle, $newcategory->id);
+                        }
                     }
                 }
                 continue;
@@ -393,6 +410,10 @@ class qformat_default {
                 );
 
             $question->id = $DB->insert_record('question', $question);
+
+            if (isset($question->importhandle)) {
+                $this->map_structure_element($question->importhandle, $question->id);
+            }
 
             if (isset($question->questiontextitemid)) {
                 $question->questiontext = file_save_draft_area_files($question->questiontextitemid,
@@ -935,6 +956,89 @@ class qformat_default {
     protected function format_question_text($question) {
         return question_utils::to_plain_text($question->questiontext,
                 $question->questiontextformat);
+    }
+
+    /**
+     * Return a description of quiz structure derived from the imported format
+     * @return array a question sequence
+     */
+    public function get_quiz_structure() {
+        // Only return elements that have had their id set to a non-zero value.
+        $structure = array();
+        foreach ($this->structure as $element) {
+            switch ($element->type) {
+                case 'question':
+                    if ($element->questionid) {
+                        $structure[] = $element;
+                    }
+                    break;
+                case 'random':
+                    if ($element->categoryid) {
+                        $structure[] = $element;
+                    }
+                    break;
+            }
+        }
+        return $structure;
+    }
+
+    /**
+     * Return a handle for adding a new element to the quiz structure
+     * @return integer
+     */
+    private function get_structure_element_handle() {
+        static $counter = 0;
+        return ++$counter;
+    }
+
+    /**
+     * Add a question element to the structure.
+     * @return integer the element handle for storing in the question as an 'importhandle' property
+     */
+    protected function add_question_to_structure() {
+        $element = new stdClass();
+        $element->type = 'question';
+        $element->questionid = null;    // gets set when importprocess() maps structural elements after each is created
+        $element->handle = $this->get_structure_element_handle();
+        $this->structure[$element->handle] = $element;
+
+        return $element->handle;
+    }
+
+    /**
+     * Adds a random question selection element to the structure.
+     * @param integer $count the number of random questions to be added
+     * @return integer the element handle for storing in the question as an 'importhandle' property
+     */
+    protected function add_random_question_to_structure($count) {
+        $element = new stdClass();
+        $element->type = 'random';
+        $element->categoryid = null;   // gets set when importprocess() maps structural elements after each is created
+        $element->count = $count;
+        $element->handle = $this->get_structure_element_handle();
+        $this->structure[$element->handle] = $element;
+
+        return $element->handle;
+    }
+
+    /**
+     * Specify the record id for a structure element once it is known
+     * @param integer $handle the element handle as returned by add_{random_,}question_to_structure
+     * @param integer $newid the question/category id
+     */
+    private function map_structure_element($handle, $newid) {
+        foreach ($this->structure as $element) {
+            if ($element->handle == $handle) {
+                switch ($element->type) {
+                    case 'question':
+                        $element->questionid = $newid;
+                        break;
+                    case 'random':
+                        $element->categoryid = $newid;
+                        break;
+                }
+            }
+        }
     }
 }
 
