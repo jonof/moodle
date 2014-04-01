@@ -389,6 +389,21 @@ class block_manager {
         }
     }
 
+    /**
+     * Return the names of regions that are protected from manipulation by the current user.
+     * @return array names of regions
+     */
+    public function get_protected_regions() {
+        $regions = array();
+        foreach ($this->get_regions() as $region) {
+            if (!$this->user_can_edit_region($region)) {
+                $regions[] = $region;
+            }
+        }
+        return $regions;
+    }
+
+
 /// Setter methods =============================================================
 
     /**
@@ -952,6 +967,9 @@ class block_manager {
             }
         }
 
+        // Determine whether the current user can manipulate blocks within the region.
+        $protected = !$this->user_can_edit_region($region);
+
         foreach ($instances as $instance) {
             $content = $instance->get_content_for_output($output);
             if (empty($content)) {
@@ -959,7 +977,8 @@ class block_manager {
             }
 
             if ($this->movingblock && $lastweight != $instance->instance->weight &&
-                    $content->blockinstanceid != $this->movingblock && $lastblock != $this->movingblock) {
+                    $content->blockinstanceid != $this->movingblock && $lastblock != $this->movingblock &&
+                    !$protected) {
                 $results[] = new block_move_target($this->get_move_target_url($region, ($lastweight + $instance->instance->weight)/2));
             }
 
@@ -974,7 +993,7 @@ class block_manager {
             $lastblock = $instance->instance->id;
         }
 
-        if ($this->movingblock && $lastblock != $this->movingblock) {
+        if ($this->movingblock && $lastblock != $this->movingblock && !$protected) {
             $results[] = new block_move_target($this->get_move_target_url($region, $lastweight + 1));
         }
         return $results;
@@ -1033,6 +1052,11 @@ class block_manager {
         $blocktitle = $block->title;
         if (empty($blocktitle)) {
             $blocktitle = $block->arialabel;
+        }
+
+        // Determine whether the current user can manipulate blocks within the region.
+        if (!$this->user_can_edit_region($block->instance->defaultregion)) {
+            return $controls;
         }
 
         if ($this->page->user_can_edit_blocks()) {
@@ -1120,6 +1144,20 @@ class block_manager {
     }
 
     /**
+     * Check whether the logged in currently user can manipulate blocks of the given region.
+     * @param string $region the region name.
+     * @param context $context a context, or the page's if null.
+     * @return boolean whether the user is allowed to manipulate the region's blocks.
+     */
+    public function user_can_edit_region($region, $context = null) {
+        if ($context === null) {
+            $context = $this->page->context;
+        }
+        $cap = $this->page->theme->get_region_protection_cap($this->page->pagelayout, $region);
+        return empty($cap) || has_capability($cap, $context);
+    }
+
+    /**
      * Process any block actions that were specified in the URL.
      *
      * @return boolean true if anything was done. False if not.
@@ -1178,6 +1216,10 @@ class block_manager {
         require_sesskey();
         $block = $this->page->blocks->find_instance($blockid);
         if (!$this->user_can_delete_block($block)) {
+            throw new moodle_exception('nopermissions', '', $this->page->url->out(), get_string('deleteablock'));
+        }
+
+        if (!$this->user_can_edit_region($block->instance->defaultregion)) {
             throw new moodle_exception('nopermissions', '', $this->page->url->out(), get_string('deleteablock'));
         }
 
@@ -1269,6 +1311,10 @@ class block_manager {
             throw new moodle_exception('nopermissions', '', $this->page->url->out(), get_string('hideshowblocks'));
         } else if (!$block->instance_can_be_hidden()) {
             return false;
+        }
+
+        if (!$this->user_can_edit_region($block->instance->defaultregion)) {
+            throw new moodle_exception('nopermissions', '', $this->page->url->out(), get_string('hideshowblocks'));
         }
 
         blocks_set_visibility($block->instance, $this->page, $newvisibility);
@@ -1502,6 +1548,10 @@ class block_manager {
             throw new moodle_exception('nopermissions', '', $this->page->url->out(), get_string('editblock'));
         }
 
+        if (!$this->user_can_edit_region($block->instance->defaultregion)) {
+            throw new moodle_exception('nopermissions', '', $this->page->url->out(), get_string('editblock'));
+        }
+
         $newregion = optional_param('bui_newregion', '', PARAM_ALPHANUMEXT);
         $newweight = optional_param('bui_newweight', null, PARAM_FLOAT);
         if (!$newregion || is_null($newweight)) {
@@ -1513,6 +1563,10 @@ class block_manager {
 
         if (!$this->is_known_region($newregion)) {
             throw new moodle_exception('unknownblockregion', '', $this->page->url, $newregion);
+        }
+
+        if (!$this->user_can_edit_region($newregion)) {
+            throw new moodle_exception('nopermissions', '', $this->page->url->out(), get_string('editblock'));
         }
 
         // Move this block. This may involve moving other nearby blocks.

@@ -216,6 +216,13 @@ class block_edit_form extends moodleform {
         if (!array_key_exists($defaultregion, $defaultregionoptions)) {
             $defaultregionoptions[$defaultregion] = $defaultregion;
         }
+        // Remove options for regions that can't be manipulated by the user.
+        foreach (array_keys($regionoptions) as $region) {
+            if (!$this->page->blocks->user_can_edit_region($region) &&
+                    $defaultregion != $region) {
+                unset($defaultregionoptions[$region]);
+            }
+        }
         $mform->addElement('select', 'bui_defaultregion', get_string('defaultregion', 'block'), $defaultregionoptions);
         $mform->addHelpButton('bui_defaultregion', 'defaultregion', 'block');
 
@@ -231,6 +238,13 @@ class block_edit_form extends moodleform {
         if (!array_key_exists($blockregion, $regionoptions)) {
             $regionoptions[$blockregion] = $blockregion;
         }
+        // Remove options for regions that can't be manipulated by the user.
+        foreach (array_keys($regionoptions) as $region) {
+            if (!$this->page->blocks->user_can_edit_region($region) &&
+                    $blockregion != $region) {
+                unset($regionoptions[$region]);
+            }
+        }
         $mform->addElement('select', 'bui_region', get_string('region', 'block'), $regionoptions);
 
         $mform->addElement('select', 'bui_weight', get_string('weight', 'block'), $weightoptions);
@@ -241,6 +255,11 @@ class block_edit_form extends moodleform {
         }
         if (!$this->page->user_can_edit_blocks()) {
             $mform->hardFreeze($pagefields);
+        }
+
+        // Lock up all fields when the block is in a default region protected from the user.
+        if (!$this->page->blocks->user_can_edit_region($defaultregion, $parentcontext)) {
+            $mform->hardFreezeAllVisibleExcept(array());
         }
 
         $this->add_action_buttons();
