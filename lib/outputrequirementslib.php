@@ -331,6 +331,7 @@ class page_requirements_manager {
                 'pagelayout' => $page->pagelayout,
                 'subpage' => $page->subpage,
                 'regions' => $page->blocks->get_regions(),
+                'protectedregions' => $page->blocks->get_protected_regions(),
                 'contextid' => $page->context->id,
             );
             if (!empty($page->cm->id)) {

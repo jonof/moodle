@@ -1892,6 +1892,23 @@ class theme_config {
     }
 
     /**
+     * Returns the capability to test if the given region is protected for the given page layout
+     *
+     * @param string $pagelayout the the page layout name.
+     * @param string $region The region name to get
+     * @return string or null if no protection capability is defined
+     */
+    public function get_region_protection_cap($pagelayout, $region) {
+        $layoutinfo = $this->layout_info_for_page($pagelayout);
+        if (!empty($layoutinfo['regioncapabilities']) &&
+                isset($layoutinfo['regioncapabilities'][$region])) {
+            return $layoutinfo['regioncapabilities'][$region];
+        }
+
+        return null;
+    }
+
+    /**
      * Returns the human readable name of the theme
      *
      * @return string
