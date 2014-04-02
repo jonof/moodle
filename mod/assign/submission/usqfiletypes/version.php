@@ -26,8 +26,8 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->version   = 2014012200;
-$plugin->requires  = 2013050100;
+$plugin->requires  = 2013111800;
 $plugin->component = 'assignsubmission_usqfiletypes';
 $plugin->dependencies = array(
-    'assignsubmission_file' => ANY_VERSION
+    'assignsubmission_file' => 2013110500
 );

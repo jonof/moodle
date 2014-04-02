@@ -218,7 +218,7 @@ class assign_submission_usqfiletypes extends assign_submission_plugin {
             return true;
         }
 
-        // replace the 'File submissions' file manager element with one of our own tweaking
+        // tweak the 'File submissions' file manager element with our accepted types list
         $fmelem = $mform->getElement('files_filemanager');
         $fmelem->setAcceptedtypes($this->get_accepted_types());
 
