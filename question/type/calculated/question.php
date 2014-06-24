@@ -66,7 +66,7 @@ class qtype_calculated_question extends qtype_numerical_question
 
         foreach ($this->answers as $ans) {
             if ($ans->answer && $ans->answer !== '*') {
-                $ans->answer = $this->vs->calculate($ans->answer,
+                $ans->answer = $this->vs->calculate(qtype_calculated::expand_formula($ans->answer),
                         $ans->correctanswerlength, $ans->correctanswerformat);
             }
             $ans->feedback = $this->vs->replace_expressions_in_text($ans->feedback,

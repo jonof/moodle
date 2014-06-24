@@ -1059,14 +1059,15 @@ class qtype_calculated extends question_type {
         $delimiter = ': ';
         $virtualqtype =  $qtypeobj->get_virtual_qtype();
         foreach ($answers as $key => $answer) {
-            $formula = $this->substitute_variables($answer->answer, $data);
+            $expandedanswer = self::expand_formula($answer->answer);
+            $formula = $this->substitute_variables($expandedanswer, $data);
             $formattedanswer = qtype_calculated_calculate_answer(
-                $answer->answer, $data, $answer->tolerance,
+                $expandedanswer, $data, $answer->tolerance,
                 $answer->tolerancetype, $answer->correctanswerlength,
                 $answer->correctanswerformat, $unit);
             if ($formula === '*') {
                 $answer->min = ' ';
-                $formattedanswer->answer = $answer->answer;
+                $formattedanswer->answer = $expandedanswer;
             } else {
                 eval('$ansvalue = '.$formula.';');
                 $ans = new qtype_numerical_answer(0, $ansvalue, 0, '', 0, $answer->tolerance);
@@ -1798,6 +1799,56 @@ class qtype_calculated extends question_type {
         $this->delete_files_in_answers($questionid, $contextid);
         $this->delete_files_in_hints($questionid, $contextid);
     }
+
+    /**
+     * Process formula text, expanding any variables found within.
+     * Variables are declared with lines of the format `varname = expression`.
+     * References to variables are notated as `[varname]`.
+     * The first line not containing an `=` is the root expression, with any
+     * following lines being ignored.
+     *
+     * @param string $formula the original string
+     * @return string the expanded formula
+     */
+    public static function expand_formula($formula) {
+        $lines = array_map('trim', explode("\n", $formula));
+        $expressions = array();
+        $root = null;
+
+        foreach ($lines as $line) {
+            if ($line === '') {
+                // Ignore blank lines.
+                continue;
+            } else if (strchr($line, '=') !== false) {
+                // Record the variable's expression.
+                list ($var, $expr) = explode('=', $line, 2);
+                $var = trim($var);
+                $expr = trim($expr);
+
+                $expressions['[' . $var . ']'] = '(' . $expr . ')';
+            } else {
+                // The first line that is not an assignment is considered the root expression.
+                $root = $line;
+                break;
+            }
+        }
+
+        // There must be a line that is the root expression.
+        if (!$root) {
+            return null;
+        }
+
+        $tries = 100;
+        $final = $root;
+        do {
+            $final = str_replace(array_keys($expressions), array_values($expressions), $final, $count);
+        } while ($count > 0 && --$tries > 0);
+        if (!$tries) {
+            throw new coding_exception('too many cycles when trying to expand formula');
+        }
+
+        return $final;
+    }
 }
 
 
@@ -1898,6 +1949,9 @@ function qtype_calculated_find_formula_errors($formula) {
     while (preg_match('~\\{[[:alpha:]][^>} <{"\']*\\}~', $formula, $regs)) {
         $formula = str_replace($regs[0], '1', $formula);
     }
+
+    // Expand any expressions
+    $formula = qtype_calculated::expand_formula($formula);
 
     // Strip away empty space and lowercase it.
     $formula = strtolower(str_replace(' ', '', $formula));

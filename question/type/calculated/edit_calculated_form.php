@@ -77,8 +77,11 @@ class qtype_calculated_edit_form extends qtype_numerical_edit_form {
         // Tolerance field will be part of its own group.
         $tolerance = $answeroptions[1];
 
+        // Replace the answer field with a textarea.
+        $answeroptions[0] = $mform->createElement('textarea', 'answer', $answeroptions[0]->getLabel(),
+            array('rows' => '3', 'cols' => '50'));
+
         // Update Answer options group to contain only answer and grade fields.
-        $answeroptions[0]->setSize(55);
         $answeroptions = array($answeroptions[0], $answeroptions[2]);
         $repeated[0]->setElements($answeroptions);
 
