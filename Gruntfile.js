@@ -49,6 +49,15 @@ module.exports = function(grunt) {
                     }
                 )
             }
+        },
+        watch: {
+            amd: {
+                files: ['**/amd/src/*.js'],
+                tasks: ['newer:jshint', 'newer:uglify'],
+                options: {
+                    spawn: false,
+                }
+            }
         }
     });
 
@@ -140,6 +149,8 @@ module.exports = function(grunt) {
     // Register NPM tasks.
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-contrib-jshint');
+    grunt.loadNpmTasks('grunt-contrib-watch');
+    grunt.loadNpmTasks('grunt-newer');
 
     // Register the shifter task.
     grunt.registerTask('shifter', 'Run Shifter against the current directory', tasks.shifter);
