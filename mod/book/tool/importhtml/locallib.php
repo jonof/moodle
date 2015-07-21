@@ -64,13 +64,14 @@ function toolbook_importhtml_import_chapters($package, $type, $book, $context, $
             if ($file = $fs->get_file_by_hash(sha1("/$context->id/mod_book/importhtmltemp/0/$chapterfile->pathname"))) {
                 $chapter = new stdClass();
                 $htmlcontent = toolbook_importhtml_fix_encoding($file->get_content());
+                $defaulttitle = toolbook_importhtml_clean_default_title($chapterfile->pathname);
 
                 $chapter->bookid        = $book->id;
                 $chapter->pagenum       = $DB->get_field_sql('SELECT MAX(pagenum) FROM {book_chapters} WHERE bookid = ?', array($book->id)) + 1;
                 $chapter->importsrc     = '/'.$chapterfile->pathname;
                 $chapter->content       = toolbook_importhtml_parse_styles($htmlcontent);
                 $chapter->content       .= toolbook_importhtml_parse_body($htmlcontent);
-                $chapter->title         = toolbook_importhtml_parse_title($htmlcontent, $chapterfile->pathname);
+                $chapter->title         = toolbook_importhtml_parse_title($htmlcontent, $defaulttitle);
                 $chapter->contentformat = FORMAT_HTML;
                 $chapter->hidden        = 0;
                 $chapter->timecreated   = time();
@@ -343,4 +344,23 @@ function toolbook_importhtml_get_chapter_files($package, $type) {
     }
 
     return $chapterfiles;
+}
+
+/**
+ * Cleans lint from a filename to make a more suitable default title.
+ *
+ * @param string $pathname the filepath
+ * @return string
+ */
+function toolbook_importhtml_clean_default_title($pathname) {
+    // Remove .html extension from chapter name shown to reader.
+    $title = preg_replace('/\.html?$/i', '', $pathname);
+
+    // Remove filenames from a path.
+    $title = preg_replace("/^(.+?)\/.+/", '$1', $title);
+
+    // Remove the _sub from the chapter name.
+    $title = preg_replace('/_sub(\/|$)/i', '$1', $title);
+
+    return $title;
 }
