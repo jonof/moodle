@@ -766,29 +766,24 @@ class assign_files implements renderable {
      * The constructor
      *
      * @param context $context
+     * @param object $course
+     * @param object $cm
      * @param int $sid
      * @param string $filearea
      * @param string $component
      */
-    public function __construct(context $context, $sid, $filearea, $component) {
+    public function __construct(context $context, $course, $cm, $sid, $filearea, $component) {
         global $CFG;
         $this->context = $context;
-        list($context, $course, $cm) = get_context_info_array($context->id);
         $this->cm = $cm;
         $this->course = $course;
         $fs = get_file_storage();
         $this->dir = $fs->get_area_tree($this->context->id, $component, $filearea, $sid);
 
-        $files = $fs->get_area_files($this->context->id,
-                                     $component,
-                                     $filearea,
-                                     $sid,
-                                     'timemodified',
-                                     false);
-
         if (!empty($CFG->enableportfolios)) {
             require_once($CFG->libdir . '/portfoliolib.php');
-            if (count($files) >= 1 && !empty($sid) &&
+            $hasfiles = $fs->is_area_empty($this->context->id, $component, $filearea, $sid);
+            if ($hasfiles && !empty($sid) &&
                     has_capability('mod/assign:exportownsubmission', $this->context)) {
                 $button = new portfolio_add_button();
                 $callbackparams = array('cmid' => $this->cm->id,

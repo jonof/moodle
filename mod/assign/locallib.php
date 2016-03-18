@@ -4744,7 +4744,9 @@ class assign {
     public function render_area_files($component, $area, $submissionid) {
         global $USER;
 
-        return $this->get_renderer()->assign_files($this->context, $submissionid, $area, $component);
+        return $this->get_renderer()->assign_files($this->get_context(),
+            $this->get_course(), $this->get_course_module(),
+            $submissionid, $area, $component);
 
     }
 
