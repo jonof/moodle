@@ -64,6 +64,8 @@ class assign_grading_table extends table_sql implements renderable {
     private $plugincache = array();
     /** @var array $scale - A list of the keys and descriptions for the custom scale */
     private $scale = null;
+    /** @var array $gradingdisabled - Caches outcomes of assign::grading_disabled() calls */
+    private $gradingdisabled = array();
 
     /**
      * overridden constructor keeps a reference to the assignment class that is displaying this table
@@ -496,7 +498,7 @@ class assign_grading_table extends table_sql implements renderable {
     public function col_workflowstatus(stdClass $row) {
         $o = '';
 
-        $gradingdisabled = $this->assignment->grading_disabled($row->id);
+        $gradingdisabled = $this->grading_disabled($row->id);
         // The function in the assignment keeps a static cache of this list of states.
         $workflowstates = $this->assignment->get_marking_workflow_states_for_current_user();
         $workflowstate = $row->workflowstate;
@@ -800,7 +802,7 @@ class assign_grading_table extends table_sql implements renderable {
      * @return string
      */
     public function col_gradecanbechanged(stdClass $row) {
-        $gradingdisabled = $this->assignment->grading_disabled($row->id);
+        $gradingdisabled = $this->grading_disabled($row->id);
         if ($gradingdisabled) {
             return get_string('no');
         } else {
@@ -830,7 +832,7 @@ class assign_grading_table extends table_sql implements renderable {
         $link = '';
         $separator = $this->output->spacer(array(), true);
         $grade = '';
-        $gradingdisabled = $this->assignment->grading_disabled($row->id);
+        $gradingdisabled = $this->grading_disabled($row->id);
 
         if (!$this->is_downloading() && $this->hasgrade) {
             $name = $this->assignment->fullname($row);
@@ -1420,5 +1422,17 @@ class assign_grading_table extends table_sql implements renderable {
             return;
         }
         parent::setup();
+    }
+
+    /**
+     * Wrapper for assign::grading_disabled() to avoid wasteful recomputing.
+     * @param integer $id
+     * @return boolean
+     */
+    private function grading_disabled($id) {
+        if (!isset($this->gradingdisabled[$id])) {
+            $this->gradingdisabled[$id] = $this->assignment->grading_disabled($id);
+        }
+        return $this->gradingdisabled[$id];
     }
 }
