@@ -193,6 +193,31 @@ class assign {
     }
 
     /**
+     * Retrieves an existing instance of this class.
+     *
+     * @param mixed $coursemodulecontext {@see __construct()}
+     * @param mixed $coursemodule {@see __construct()}
+     * @param mixed $course {@see __construct()}
+     * @return assign
+     */
+    public static function get($coursemodulecontext, $coursemodule, $course) {
+        static $instances = array();
+        if ($coursemodulecontext && isset($instances[$coursemodulecontext->instanceid])) {
+            return $instances[$coursemodulecontext->instanceid];
+        }
+        if ($coursemodule && isset($instances[$coursemodule->id])) {
+            return $instances[$coursemodule->id];
+        }
+        $instance = new assign($coursemodulecontext, $coursemodule, $course);
+        if ($coursemodulecontext) {
+            $instances[$coursemodulecontext->instanceid] = $instance;
+        } else if ($coursemodule) {
+            $instances[$coursemodule->id] = $instance;
+        }
+        return $instance;
+    }
+
+    /**
      * Set the action and parameters that can be used to return to the current page.
      *
      * @param string $action The action for the current page

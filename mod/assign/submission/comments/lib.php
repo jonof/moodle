@@ -43,7 +43,7 @@ function assignsubmission_comments_comment_validate(stdClass $options) {
     $context = $options->context;
 
     require_once($CFG->dirroot . '/mod/assign/locallib.php');
-    $assignment = new assign($context, null, null);
+    $assignment = assign::get($context, null, null);
 
     if ($assignment->get_instance()->id != $submission->assignment) {
         throw new comment_exception('invalidcontext');
@@ -80,7 +80,7 @@ function assignsubmission_comments_comment_permissions(stdClass $options) {
     $context = $options->context;
 
     require_once($CFG->dirroot . '/mod/assign/locallib.php');
-    $assignment = new assign($context, null, null);
+    $assignment = assign::get($context, null, null);
 
     if ($assignment->get_instance()->id != $submission->assignment) {
         throw new comment_exception('invalidcontext');
@@ -122,7 +122,7 @@ function assignsubmission_comments_comment_display($comments, $options) {
     $course = $options->courseid;
 
     require_once($CFG->dirroot . '/mod/assign/locallib.php');
-    $assignment = new assign($context, $cm, $course);
+    $assignment = assign::get($context, $cm, $course);
 
     if ($assignment->get_instance()->id != $submission->assignment) {
         throw new comment_exception('invalidcontext');
