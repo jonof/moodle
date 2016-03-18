@@ -1,22 +1,24 @@
 M.mod_assign = {};
 
-M.mod_assign.init_tree = function(Y, expand_all, htmlid) {
-    var treeElement = Y.one('#'+htmlid);
-    if (treeElement) {
-        Y.use('yui2-treeview', function(Y) {
-            var tree = new Y.YUI2.widget.TreeView(htmlid);
+M.mod_assign.init_trees = function(Y, expand_all) {
+    var treeElements = Y.all('.assign_files_tree');
 
-            tree.subscribe("clickEvent", function(node, event) {
-                // We want normal clicking which redirects to url.
-                return false;
-            });
+    Y.use('yui2-treeview', function(Y) {
+        function clickEvent(node, event) {
+            // We want normal clicking which redirects to url.
+            return false;
+        }
+
+        treeElements.each(function (node) {
+            var tree = new Y.YUI2.widget.TreeView(node.getDOMNode());
+            tree.subscribe("clickEvent", clickEvent);
 
             if (expand_all) {
                 tree.expandAll();
             }
             tree.render();
         });
-    }
+    });
 };
 
 M.mod_assign.init_grading_table = function(Y) {

@@ -57,9 +57,10 @@ class mod_assign_renderer extends plugin_renderer_base {
      * @return string
      */
     public function render_assign_files(assign_files $tree) {
-        $this->htmlid = html_writer::random_id('assign_files_tree');
-        $this->page->requires->js_init_call('M.mod_assign.init_tree', array(true, $this->htmlid));
-        $html = '<div id="'.$this->htmlid.'">';
+        if ($this->page->requires->should_create_one_time_item_now('M.mod_assign.init_trees')) {
+            $this->page->requires->js_init_call('M.mod_assign.init_trees', array(true));
+        }
+        $html = '<div class="assign_files_tree">';
         $html .= $this->htmllize_tree($tree, $tree->dir);
         $html .= '</div>';
 
