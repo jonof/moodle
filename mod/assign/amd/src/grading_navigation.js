@@ -485,12 +485,32 @@ define(['jquery', 'core/notification', 'core/str', 'core/form-autocomplete',
             this._setCountString(currentIndex, count);
             // Update window URL
             if (currentIndex > 0) {
-                var url = new URL(window.location);
-                if (parseInt(url.searchParams.get('blindid')) > 0) {
-                    var newid = this._filteredUsers[currentIndex - 1].recordid;
-                    url.searchParams.set('blindid', newid);
+                var url, newid;
+                if (typeof URL === 'function') {
+                    url = new URL(window.location);
+                    if (parseInt(url.searchParams.get('blindid')) > 0) {
+                        newid = this._filteredUsers[currentIndex - 1].recordid;
+                        url.searchParams.set('blindid', newid);
+                    } else {
+                        url.searchParams.set('userid', userid);
+                    }
                 } else {
-                    url.searchParams.set('userid', userid);
+                    // Workaround for IE11.
+                    var location = document.createElement('a');
+                    var blindidrex = /([?&])blindid=[^&]+/;
+                    var useridrex = /([?&])userid=[^&]+/;
+                    var search = window.location.search;
+                    if (blindidrex.test(search)) {
+                        newid = this._filteredUsers[currentIndex - 1].recordid;
+                        search = search.replace(blindidrex, '$1blindid=' + newid);
+                    } else if (useridrex.test(search)) {
+                        search = search.replace(useridrex, '$1userid=' + userid);
+                    } else {
+                        search += '?&'.charAt(search.length > 0) + 'userid=' + userid;
+                    }
+                    location.href = window.location.href;
+                    location.search = search;
+                    url = location.href;
                 }
                 // We do this so a browser refresh will return to the same user.
                 window.history.replaceState({}, "", url);
