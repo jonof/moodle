@@ -79,7 +79,7 @@ class qtype_multichoice extends question_type {
         }
         $options->answernumbering = $config->answernumbering;
         $options->shuffleanswers = $config->shuffleanswers;
-        $options->showstandardinstruction = 0;
+        $options->showstandardinstruction = $config->showstandardinstruction;
         $options->shownumcorrect = 1;
 
         return $options;
@@ -164,7 +164,7 @@ class qtype_multichoice extends question_type {
             $options->correctfeedback = '';
             $options->partiallycorrectfeedback = '';
             $options->incorrectfeedback = '';
-            $options->showstandardinstruction = 0;
+            $options->showstandardinstruction = get_config('qtype_multichoice', 'showstandardinstruction');
             $options->id = $DB->insert_record('qtype_multichoice_options', $options);
         }
 

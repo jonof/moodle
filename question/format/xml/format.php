@@ -440,7 +440,8 @@ class qformat_xml extends qformat_default {
                 array('#', 'answernumbering', 0, '#'), 'abc');
         $qo->shuffleanswers = $this->trans_single($shuffleanswers);
         $qo->showstandardinstruction = $this->getpath($question,
-            array('#', 'showstandardinstruction', 0, '#'), '1');
+            array('#', 'showstandardinstruction', 0, '#'),
+            get_config('qtype_multichoice', 'showstandardinstruction'));
 
         // There was a time on the 1.8 branch when it could output an empty
         // answernumbering tag, so fix up any found.
