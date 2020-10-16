@@ -228,11 +228,20 @@ var COMMENT = function(editor, gradeid, pageno, x, y, width, colour, rawtext) {
     };
 
     /**
+     * Determine whether the context menu is visible.
+     * @return boolean
+     */
+    var isMenuActive = function() {
+        return this.menu.get('visible');
+    }.bind(this);
+
+
+    /**
      * Delete an empty comment if it's menu hasn't been opened in time.
      * @method delete_comment_later
      */
     this.delete_comment_later = function() {
-        if (this.deleteme && !this.menu.get('visible')) {
+        if (this.deleteme && !isMenuActive()) {
             this.remove();
         }
     };
@@ -254,7 +263,7 @@ var COMMENT = function(editor, gradeid, pageno, x, y, width, colour, rawtext) {
         // Function to collapse a comment to a marker icon.
         node.collapse = function(delay) {
             node.collapse.delay = Y.later(delay, node, function() {
-                if (editor.collapsecomments && !menu.getData('comment').menu.get('visible')) {
+                if (editor.collapsecomments && !isMenuActive()) {
                     container.addClass('commentcollapsed');
                 }
             });
