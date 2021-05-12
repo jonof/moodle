@@ -643,6 +643,7 @@ class qformat_blackboard_six_qti extends qformat_blackboard_six_base {
         $question->qtype = 'multichoice';
         $question = $this->add_blank_combined_feedback($question);
         $question->single = 1;
+        $question->showstandardinstruction = get_config('qtype_multichoice', 'showstandardinstruction');
         $feedback = array();
         foreach ($quest->feedback as $fback) {
             $feedback[$fback->ident] = $fback->text;
@@ -714,6 +715,7 @@ class qformat_blackboard_six_qti extends qformat_blackboard_six_base {
         $question->qtype = 'multichoice';
         $question = $this->add_blank_combined_feedback($question);
         $question->single = 0; // More than one answer allowed.
+        $question->showstandardinstruction = get_config('qtype_multichoice', 'showstandardinstruction');
 
         $answers = $quest->responses;
         $correctanswers = array();

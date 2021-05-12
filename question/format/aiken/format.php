@@ -137,6 +137,7 @@ class qformat_aiken extends qformat_default {
                     $question->correctfeedback = $this->text_field('');
                     $question->partiallycorrectfeedback = $this->text_field('');
                     $question->incorrectfeedback = $this->text_field('');
+                    $question->showstandardinstruction = get_config('qtype_multichoice', 'showstandardinstruction');
                 }
             }
         }

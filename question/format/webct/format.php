@@ -577,6 +577,7 @@ class qformat_webct extends qformat_default {
                 $question->feedback = array();
                 $question->qtype = 'multichoice';
                 $question->single = 1;        // Only one answer is allowed.
+                $question->showstandardinstruction = get_config('qtype_multichoice', 'showstandardinstruction');
                 $ignorerestofquestion = false;
                 continue;
             }
@@ -587,6 +588,7 @@ class qformat_webct extends qformat_default {
                 $question->feedback = array();
                 $question->qtype = 'multichoice';
                 $question->single = 0;        // Many answers allowed.
+                $question->showstandardinstruction = get_config('qtype_multichoice', 'showstandardinstruction');
                 $ignorerestofquestion = false;
                 continue;
             }

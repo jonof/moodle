@@ -119,6 +119,7 @@ class qformat_missingword extends qformat_default {
                 $question->qtype = 'multichoice';
                 $question = $this->add_blank_combined_feedback($question);
                 $question->single = 1; // Only one answer allowed.
+                $question->showstandardinstruction = get_config('qtype_multichoice', 'showstandardinstruction');
 
                 foreach ($answers as $key => $answer) {
                     $answer = trim($answer);

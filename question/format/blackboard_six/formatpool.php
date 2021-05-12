@@ -247,6 +247,7 @@ class qformat_blackboard_six_pool extends qformat_blackboard_six_base {
 
             $question->qtype = 'multichoice';
             $question->single = 1; // Only one answer is allowed.
+            $question->showstandardinstruction = get_config('qtype_multichoice', 'showstandardinstruction');
 
             $choices = $this->getpath($thisquestion, array('#', 'ANSWER'), false, false);
             $correctanswerid = $this->getpath($thisquestion,
@@ -301,6 +302,7 @@ class qformat_blackboard_six_pool extends qformat_blackboard_six_base {
             $question->qtype = 'multichoice';
             $question->defaultmark = 1;
             $question->single = 0; // More than one answers allowed.
+            $question->showstandardinstruction = get_config('qtype_multichoice', 'showstandardinstruction');
 
             $choices = $this->getpath($thisquestion, array('#', 'ANSWER'), false, false);
             $correctanswerids = array();

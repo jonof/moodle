@@ -351,6 +351,7 @@ class qformat_gift extends qformat_default {
                 } else {
                     $question->single = 1; // Only one answer allowed (the default).
                 }
+                $question->showstandardinstruction = get_config('qtype_multichoice', 'showstandardinstruction');
                 $question = $this->add_blank_combined_feedback($question);
 
                 $answertext = str_replace("=", "~=", $answertext);

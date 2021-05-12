@@ -206,6 +206,7 @@ class qformat_examview extends qformat_based_on_xml {
         switch ($question->qtype) {
             case 'multichoice':
                 $question = $this->parse_mc($qrec['#'], $question);
+                $question->showstandardinstruction = get_config('qtype_multichoice', 'showstandardinstruction');
                 break;
             case 'match':
                 $groupname = trim($qrec['@']['group']);
