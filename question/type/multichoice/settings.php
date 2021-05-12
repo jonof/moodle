@@ -41,4 +41,8 @@ if ($ADMIN->fulltree) {
     new lang_string('answernumbering', 'qtype_multichoice'),
     new lang_string('answernumbering_desc', 'qtype_multichoice'), 'abc', null ));
 
+    $settings->add(new admin_setting_configcheckbox('qtype_multichoice/showstandardinstruction',
+        new lang_string('showstandardinstruction', 'qtype_multichoice'),
+        new lang_string('showstandardinstruction_help', 'qtype_multichoice'), '0'));
+
 }
