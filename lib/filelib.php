@@ -3897,6 +3897,22 @@ class curl {
                     }
                 }
 
+                // Work around badly-encoded redirects using cURL's 'strcpy_url' technique.
+                if (strpos($redirecturl, ' ') !== false) {
+                    if (($qmarkpos = strpos($redirecturl, '?')) === false) {
+                        $leftpart = $redirecturl;
+                        $rightpart = '';
+                        $qmark = '';
+                    } else {
+                        $leftpart = substr($redirecturl, 0, $qmarkpos);
+                        $rightpart = substr($redirecturl, $qmarkpos + 1);
+                        $qmark = '?';
+                    }
+                    $leftpart = str_replace(' ', '%20', $leftpart);
+                    $rightpart = str_replace(' ', '+', $rightpart);
+                    $redirecturl = $leftpart . $qmark . $rightpart;
+                }
+
                 curl_setopt($curl, CURLOPT_URL, $redirecturl);
 
                 // If CURLOPT_UNRESTRICTED_AUTH is empty/false, don't send credentials to other hosts.

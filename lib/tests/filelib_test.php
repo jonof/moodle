@@ -496,6 +496,26 @@ final class filelib_test extends \advanced_testcase {
         $this->assertSame('done', $contents);
     }
 
+    /**
+     * Test handling of an incorrectly encoded HTTP redirect location.
+     */
+    public function test_curl_nonconformant_redirect(): void {
+        $testurl = $this->getExternalTestFileUrl('/test%20spaces%20redir.php');
+
+        // The 'test spaces redir.php' script issues the wrongly encoded
+        // redirect, which the curl class corrects to what we verify below.
+        $testfinalurl = '/test%20spaces%20redir.php?step=value+with+spaces';
+
+        $curl = new \curl();
+        $contents = $curl->get($testurl);
+        $response = $curl->getResponse();
+        $this->assertSame('200 OK', reset($response));
+        $this->assertSame(0, $curl->get_errno());
+        $this->assertSame(1, $curl->info['redirect_count']);
+        $this->assertSame($testfinalurl, substr($curl->info['url'], -strlen($testfinalurl)));
+        $this->assertSame('done', $contents);
+    }
+
     public function test_curl_proxybypass(): void {
         global $CFG;
         $testurl = $this->getExternalTestFileUrl('/test.html');
