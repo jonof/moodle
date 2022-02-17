@@ -3605,9 +3605,15 @@ class curl {
             }
             unset($options['filepath']);
             unset($options['auto-handle']);
-            $handles[$i] = curl_init($requests[$i]['url']);
-            $this->apply_opt($handles[$i], $options);
-            curl_multi_add_handle($main, $handles[$i]);
+
+            $urlisblocked = $this->check_securityhelper_blocklist($requests[$i]['url']);
+            if (!is_null($urlisblocked)) {
+                $results[$i] = $urlisblocked;
+            } else {
+                $handles[$i] = curl_init($requests[$i]['url']);
+                $this->apply_opt($handles[$i], $options);
+                curl_multi_add_handle($main, $handles[$i]);
+            }
         }
         $running = 0;
         do {
@@ -3621,6 +3627,11 @@ class curl {
         $this->error = curl_multi_strerror($this->errno);
 
         for ($i = 0; $i < $count; $i++) {
+            if (!isset($handles[$i])) {
+                // The request was blocked before it was even made.
+                $this->info[$i] = [];
+                continue;
+            }
             if (empty($this->options['CURLOPT_RETURNTRANSFER'])) {
                 $results[$i] = true;
             } else {
@@ -3639,6 +3650,7 @@ class curl {
                 fclose($requests[$i]['file']);
             }
         }
+        ksort($results);    // Ensures blocked requests appear in consistent order.
         return $results;
     }
 

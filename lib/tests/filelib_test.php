@@ -686,6 +686,43 @@ class core_filelib_testcase extends advanced_testcase {
     }
 
     /**
+     * Test multi-request curl requests get checked and blocked via the security helper.
+     */
+    public function test_curl_multi_download_blocked() {
+        global $CFG;
+        $this->resetAfterTest();
+
+        $requests = [
+            [
+                'url' => 'file:///',
+                'returntransfer' => 1,
+            ],
+            [
+                'url' => 'https://example.com/',
+            ],
+        ];
+
+        set_config('curlsecurityblockedhosts', 'example.com');
+
+        $curl = new curl();
+        $results = $curl->download($requests);
+        $info = $curl->get_info();
+
+        $expected = $curl->get_security()->get_blocked_url_string();
+
+        // Check each outcome.
+        $this->assertEquals(CURLM_OK, $curl->errno);
+
+        $this->assertIsArray($info[0]);
+        $this->assertArrayNotHasKey('http_code', $info[0]);
+        $this->assertSame($expected, $results[0]);
+
+        $this->assertIsArray($info[1]);
+        $this->assertArrayNotHasKey('http_code', $info[1]);
+        $this->assertSame($expected, $results[1]);
+    }
+
+    /**
      * Testing prepare draft area
      *
      * @copyright 2012 Dongsheng Cai {@link http://dongsheng.org}
