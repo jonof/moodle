@@ -606,6 +606,86 @@ class core_filelib_testcase extends advanced_testcase {
     }
 
     /**
+     * Test multi-request curl through the download method outputting to files.
+     */
+    public function test_curl_multi_download_to_file() {
+        global $CFG;
+
+        $requests = [
+            [
+                'url' => $this->getExternalTestFileUrl('/test.html'),
+                'filepath' => "$CFG->tempdir/test.html",
+            ],
+            [
+                'url' => $this->getExternalTestFileUrl('/test.jpg'),
+                'filepath' => "$CFG->tempdir/test.jpg",
+            ],
+        ];
+
+        // Ensure no output files already exist.
+        @unlink($requests[0]['filepath']);
+        @unlink($requests[1]['filepath']);
+
+        $curl = new curl();
+        $results = $curl->download($requests);
+        $info = $curl->get_info();
+
+        // Check each outcome.
+        $this->assertEquals(CURLM_OK, $curl->errno);
+
+        $this->assertIsArray($info[0]);
+        $this->assertSame(CURLE_OK, $info[0]['errno']);
+        $this->assertSame(200, $info[0]['http_code']);
+        $this->assertSame('47250a973d1b88d9445f94db4ef2c97a', md5_file($requests[0]['filepath']));
+
+        $this->assertIsArray($info[1]);
+        $this->assertSame(CURLE_OK, $info[1]['errno']);
+        $this->assertSame(200, $info[1]['http_code']);
+        $this->assertSame('2af180e813dc3f446a9bb7b6af87ce24', md5_file($requests[1]['filepath']));
+
+        @unlink($requests[0]['filepath']);
+        @unlink($requests[1]['filepath']);
+    }
+
+    /**
+     * Test multi-request curl through the download method returning downloaded content.
+     */
+    public function test_curl_multi_download_return_transfer() {
+        global $CFG;
+
+        // Note that curl::download() cannot be passed a 'returntransfer' or
+        // equivalent option as its second argument because it is overridden
+        // to false, but setting the option for the first request will apply it
+        // to all that follow, overriding what curl::download() tried to force.
+        $requests = [
+            [
+                'url' => $this->getExternalTestFileUrl('/test.html'),
+                'returntransfer' => 1,
+            ],
+            [
+                'url' => $this->getExternalTestFileUrl('/test.jpg'),
+            ],
+        ];
+
+        $curl = new curl();
+        $results = $curl->download($requests);
+        $info = $curl->get_info();
+
+        // Check each outcome.
+        $this->assertEquals(CURLM_OK, $curl->errno);
+
+        $this->assertIsArray($info[0]);
+        $this->assertSame(CURLE_OK, $info[0]['errno']);
+        $this->assertSame(200, $info[0]['http_code']);
+        $this->assertSame('47250a973d1b88d9445f94db4ef2c97a', md5($results[0]));
+
+        $this->assertIsArray($info[1]);
+        $this->assertSame(CURLE_OK, $info[1]['errno']);
+        $this->assertSame(200, $info[1]['http_code']);
+        $this->assertSame('2af180e813dc3f446a9bb7b6af87ce24', md5($results[1]));
+    }
+
+    /**
      * Testing prepare draft area
      *
      * @copyright 2012 Dongsheng Cai {@link http://dongsheng.org}

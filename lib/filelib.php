@@ -3588,6 +3588,8 @@ class curl {
      * @return array An array of results
      */
     protected function multi($requests, $options = array()) {
+        $this->reset_request_state_vars();
+
         $count   = count($requests);
         $handles = array();
         $results = array();
@@ -3601,20 +3603,32 @@ class curl {
             foreach($requests[$i] as $n=>$v) {
                 $options[$n] = $v;
             }
+            unset($options['filepath']);
+            unset($options['auto-handle']);
             $handles[$i] = curl_init($requests[$i]['url']);
             $this->apply_opt($handles[$i], $options);
             curl_multi_add_handle($main, $handles[$i]);
         }
         $running = 0;
         do {
-            curl_multi_exec($main, $running);
-        } while($running > 0);
-        for ($i = 0; $i < $count; $i++) {
-            if (!empty($options['CURLOPT_RETURNTRANSFER'])) {
-                $results[] = true;
-            } else {
-                $results[] = curl_multi_getcontent($handles[$i]);
+            $status = curl_multi_exec($main, $running);
+            if ($running) {
+                curl_multi_select($main);
             }
+        } while($running > 0 && $status == CURLM_OK);
+
+        $this->errno = curl_multi_errno($main);
+        $this->error = curl_multi_strerror($this->errno);
+
+        for ($i = 0; $i < $count; $i++) {
+            if (empty($this->options['CURLOPT_RETURNTRANSFER'])) {
+                $results[$i] = true;
+            } else {
+                $results[$i] = curl_multi_getcontent($handles[$i]);
+            }
+            $this->info[$i] = curl_getinfo($handles[$i]);
+            $this->info[$i]['errno'] = curl_errno($handles[$i]);
+            $this->info[$i]['error'] = curl_error($handles[$i]);
             curl_multi_remove_handle($main, $handles[$i]);
         }
         curl_multi_close($main);
