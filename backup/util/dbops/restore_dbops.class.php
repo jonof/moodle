@@ -671,19 +671,44 @@ abstract class restore_dbops {
                     $questions = self::restore_get_questions($restoreid, $category->id);
 
                     // Collect all the questions for this category into memory so we only talk to the DB once.
-                    $questioncache = $DB->get_records_sql_menu('SELECT q.stamp, q.id
-                                                                  FROM {question} q
-                                                                  JOIN {question_versions} qv
-                                                                    ON qv.questionid = q.id
-                                                                  JOIN {question_bank_entries} qbe
-                                                                    ON qbe.id = qv.questionbankentryid
-                                                                  JOIN {question_categories} qc
-                                                                    ON qc.id = qbe.questioncategoryid
-                                                                 WHERE qc.id = ?', array($matchcat->id));
+                    $keycolumn = $DB->sql_concat_join("' '", ['q.id', 'qa.id']);
+                    $recordset = $DB->get_recordset_sql("SELECT $keycolumn, q.stamp, qv.version, q.id AS question, qa.answer
+                                                           FROM {question} q
+                                                           JOIN {question_versions} qv ON qv.questionid = q.id
+                                                           JOIN {question_bank_entries} qbe ON qbe.id = qv.questionbankentryid
+                                                           JOIN {question_categories} qc ON qc.id = qbe.questioncategoryid
+                                                      LEFT JOIN {question_answers} qa ON qa.question = q.id
+                                                          WHERE qc.id = ?", [$matchcat->id]);
+
+                    // Compute a hash of answer texts to differentiate between identical stamp-version questions.
+                    $answeraggregate = [];
+                    foreach ($recordset as $rec) {
+                        if (!isset($answeraggregate[$rec->question])) {
+                            $answeraggregate[$rec->question] = (object)[
+                                'stamp' => $rec->stamp,
+                                'version' => $rec->version,
+                                'question' => $rec->question,
+                                'answers' => [],
+                            ];
+                        }
+                        if (!is_null($rec->answer)) {
+                            $answeraggregate[$rec->question]->answers[] = sha1($rec->answer);
+                        }
+                    }
+                    $recordset->close();
+
+                    // Populate the question stamp-version-answershash map to question id.
+                    $questioncache = [];
+                    foreach ($answeraggregate as $rec) {
+                        sort($rec->answers);
+                        $answershash = sha1(implode($rec->answers));
+                        $questioncache["$rec->stamp $rec->version $answershash"] = $rec->question;
+                    }
 
                     foreach ($questions as $question) {
-                        if (isset($questioncache[$question->stamp])) {
-                            $matchqid = $questioncache[$question->stamp];
+                        $cachekey = "$question->stamp $question->version $question->answerhash";
+                        if (isset($questioncache[$cachekey])) {
+                            $matchqid = $questioncache[$cachekey];
                         } else {
                             $matchqid = false;
                         }
@@ -882,6 +907,7 @@ abstract class restore_dbops {
     public static function restore_get_questions($restoreid, $qcatid) {
         global $DB;
 
+        $emptyhash = sha1('');
         $results = array();
         $qs = $DB->get_recordset_sql("SELECT itemid, info
                                       FROM {backup_ids_temp}
@@ -890,6 +916,18 @@ abstract class restore_dbops {
                                        AND parentitemid = ?", array($restoreid, $qcatid));
         foreach ($qs as $q) {
             $results[$q->itemid] = backup_controller_dbops::decode_backup_temp_info($q->info);
+            $results[$q->itemid]->answerhash = $emptyhash;
+        }
+        $qs->close();
+        // Second pass for question_answerhash because MySQL won't let a temporary
+        // table be used twice in a query.
+        $qs = $DB->get_recordset_sql("SELECT itemid, info
+                                      FROM {backup_ids_temp}
+                                     WHERE backupid = ?
+                                       AND itemname = 'question_answerhash'
+                                       AND parentitemid = ?", array($restoreid, $qcatid));
+        foreach ($qs as $q) {
+            $results[$q->itemid]->answerhash = backup_controller_dbops::decode_backup_temp_info($q->info);
         }
         $qs->close();
         return $results;

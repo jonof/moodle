@@ -38,6 +38,9 @@ class restore_questions_parser_processor extends grouped_parser_processor {
     /** @var string XML path in the questions.xml backup file to question categories. */
     protected const CATEGORY_PATH = '/question_categories/question_category';
 
+    /** @var string XML path in the questions.xml backup file to question versions (Moodle 4.0+). */
+    protected const QUESTION_VERSIONS_SUBPATH = '/question_bank_entries/question_bank_entry/question_version/question_versions';
+
     /** @var string XML path in the questions.xml to question elements within question_category (Moodle 4.0+). */
     protected const QUESTION_SUBPATH =
         '/question_bank_entries/question_bank_entry/question_version/question_versions/questions/question';
@@ -51,17 +54,47 @@ class restore_questions_parser_processor extends grouped_parser_processor {
     /** @var int during the restore, this tracks the last category we saw. Any questions we see will be in here. */
     protected int $lastcatid;
 
+    /** @var int During restore, this tracks the last question version seen. */
+    protected int $lastversion;
+
+    /** @var int During restore, this tracks the last question id seen for associating answer hashes. */
+    protected int $lastquestionid;
+
     public function __construct($restoreid) {
         $this->restoreid = $restoreid;
         $this->lastcatid = 0;
+        $this->lastversion = 1;
+        $this->lastquestionid = 0;
         parent::__construct();
         // Set the paths we are interested on
         $this->add_path(self::CATEGORY_PATH);
+        $this->add_path(self::CATEGORY_PATH . self::QUESTION_VERSIONS_SUBPATH);
         $this->add_path(self::CATEGORY_PATH . self::QUESTION_SUBPATH);
         $this->add_path(self::CATEGORY_PATH . self::LEGACY_QUESTION_SUBPATH);
+
+        // Snoop on answers within question-type plugins to gauge their textual similarity.
+        foreach (\core\plugin_manager::instance()->get_plugins_of_type('qtype') as $qtype) {
+            $pluginpath = "/plugin_{$qtype->component}_question/answers";
+            $this->add_path(self::CATEGORY_PATH . self::QUESTION_SUBPATH . $pluginpath, true);
+            $this->add_path(self::CATEGORY_PATH . self::LEGACY_QUESTION_SUBPATH . $pluginpath, true);
+            $this->add_path(self::CATEGORY_PATH . self::QUESTION_SUBPATH . $pluginpath . '/answer');
+            $this->add_path(self::CATEGORY_PATH . self::LEGACY_QUESTION_SUBPATH . $pluginpath . '/answer');
+        }
     }
 
     protected function dispatch_chunk($data) {
+        if ($data['path'] == self::CATEGORY_PATH . self::QUESTION_VERSIONS_SUBPATH) {
+            $this->lastversion = $data['tags']['version'];
+            return;
+        } else if (fnmatch(self::CATEGORY_PATH . self::QUESTION_SUBPATH . '/plugin_qtype_*_question/answers', $data['path']) ||
+                fnmatch(self::CATEGORY_PATH . self::LEGACY_QUESTION_SUBPATH . '/plugin_qtype_*_question/answers', $data['path'])) {
+            $hashes = array_map(fn($a) => sha1($a['answertext']), $data['tags']['answer'] ?? []);
+            sort($hashes);
+            restore_dbops::set_backup_ids_record($this->restoreid, 'question_answerhash',
+                $this->lastquestionid, 0, $this->lastcatid, sha1(implode($hashes)));
+            return;
+        }
+
         // Prepare question_category record
         if ($data['path'] == self::CATEGORY_PATH) {
             $info     = (object)$data['tags'];
@@ -74,9 +107,11 @@ class restore_questions_parser_processor extends grouped_parser_processor {
         } else if ($data['path'] == self::CATEGORY_PATH . self::QUESTION_SUBPATH ||
                 $data['path'] == self::CATEGORY_PATH . self::LEGACY_QUESTION_SUBPATH) {
             $info = (object)$data['tags'];
+            $info->version = $this->lastversion;
             $itemname = 'question';
             $itemid   = $info->id;
             $parentitemid = $this->lastcatid;
+            $this->lastquestionid = $itemid;
 
         // Not question_category nor question, impossible. Throw exception.
         } else {
