@@ -420,6 +420,42 @@ class assign_feedback_comments extends assign_feedback_plugin {
     }
 
     /**
+     * Produce a list of files suitable for export that represent this submission.
+     *
+     * @param stdClass $submission - For this is the submission data
+     * @param stdClass $user - This is the user record for this submission
+     * @return array - return an array of files indexed by filename
+     */
+    public function get_files(stdClass $submission, stdClass $user) {
+        global $DB;
+
+        $grade = $this->assignment->get_user_grade($user->id, false, $submission->attemptnumber);
+        if (!$grade) {
+            return array();
+        }
+
+        $files = array();
+        $feedbackcomments = $this->get_feedback_comments($grade->id);
+
+        if ($feedbackcomments) {
+            $finaltext = $this->assignment->download_rewrite_pluginfile_urls($feedbackcomments->commenttext, $user, $this);
+            $formattedtext = format_text($finaltext,
+                                         $feedbackcomments->commentformat,
+                                         array('context'=>$this->assignment->get_context()));
+            if (html_is_blank($formattedtext)) {
+                return $files;
+            }
+            $head = '<head><meta charset="UTF-8"></head>';
+            $feedbackcontent = '<!DOCTYPE html><html>' . $head . '<body>'. $formattedtext . '</body></html>';
+
+            $filename = get_string('commentsfilename', 'assignfeedback_comments');
+            $files[$filename] = array($feedbackcontent);
+        }
+
+        return $files;
+    }
+
+    /**
      * Display the comment in the feedback table.
      *
      * @param stdClass $grade

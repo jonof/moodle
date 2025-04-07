@@ -685,6 +685,8 @@ class assign {
             $o .= $this->view_grading_page();
         } else if ($action == 'downloadall') {
             $o .= $this->download_submissions();
+        } else if ($action == 'downloadallfeedback') {
+            $o .= $this->download_submissions(null, true);
         } else if ($action == 'submit') {
             $PAGE->add_body_class('limitedwidth');
             $o .= $this->check_submit_for_grading($mform);
@@ -3736,10 +3738,11 @@ class assign {
      * Download a zip file of all assignment submissions.
      *
      * @param int[]|null $userids Array of user ids to download assignment submissions in a zip file
+     * @param bool $feedback download feedback rather than submissions?
      * @return string - If an error occurs, this will contain the error page.
      */
-    protected function download_submissions($userids = null) {
-        $downloader = new downloader($this, $userids ?: null);
+    protected function download_submissions($userids = null, $feedback = false) {
+        $downloader = new downloader($this, $userids ?: null, $feedback);
         if ($downloader->load_filelist()) {
             $downloader->download_zip();
         }
@@ -3754,7 +3757,7 @@ class assign {
             get_string('downloadall', 'mod_assign')
         );
         $result = $renderer->render($header);
-        $result .= $renderer->notification(get_string('nosubmission', 'mod_assign'));
+        $result .= $renderer->notification(get_string(($feedback ? 'nofeedback' : 'nosubmission'), 'mod_assign'));
         $url = new moodle_url('/mod/assign/view.php', ['id' => $cm->id, 'action' => 'grading']);
         $result .= $renderer->continue_button($url);
         $result .= $this->view_footer();
@@ -5067,6 +5070,8 @@ class assign {
 
         if ($operation == 'downloadselected') {
             $this->download_submissions($userlist);
+        } else if ($operation == 'downloadselectedfeedback') {
+            $this->download_submissions($userlist, true);
         } else {
             foreach ($userlist as $userid) {
                 if ($operation == 'lock') {

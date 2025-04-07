@@ -351,6 +351,35 @@ class assign_feedback_editpdf extends assign_feedback_plugin {
     }
 
     /**
+     * Produce a list of files suitable for export that represent this feedback or submission
+     *
+     * @param stdClass $submission The submission
+     * @param stdClass $user The user record
+     * @return array - return an array of files indexed by filename
+     */
+    public function get_files(stdClass $submission, stdClass $user) {
+        $result = array();
+        $fs = get_file_storage();
+
+        $grade = $this->assignment->get_user_grade($user->id, false, $submission->attemptnumber);
+        if (!$grade) {
+            return array();
+        }
+
+        $files = $fs->get_area_files($this->assignment->get_context()->id,
+                                     'assignfeedback_editpdf',
+                                     document_services::FINAL_PDF_FILEAREA,
+                                     $grade->id,
+                                     'timemodified',
+                                     false);
+
+        foreach ($files as $file) {
+            $result[$file->get_filename()] = $file;
+        }
+        return $result;
+    }
+
+    /**
      * Display the list of files in the feedback status table.
      *
      * @param stdClass $grade

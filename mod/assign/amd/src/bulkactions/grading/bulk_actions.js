@@ -203,6 +203,19 @@ export default class extends BulkActions {
             actions.push(new MessageAction());
         }
 
+        actions.push(
+            new GeneralAction(
+                this.#cmid,
+                this.#sesskey,
+                'downloadselectedfeedback',
+                getString('batchoperationdownloadselectedfeedback', 'mod_assign'),
+                Templates.renderPix('t/download', 'core'),
+                getString('downloadselectedfeedback', 'mod_assign'),
+                getString('batchoperationconfirmdownloadselectedfeedback', 'mod_assign'),
+                getString('batchoperationdownloadselectedfeedback', 'mod_assign'),
+            )
+        );
+
         for (const operation of this.#pluginOperations) {
             actions.push(
                 new GeneralAction(

@@ -60,13 +60,17 @@ class downloader {
     /** @var int $downloadasfolders the files to zipo (path => file) */
     private $downloadasfolders;
 
+    /** @var bool $feedback downloading feedback? */
+    private $feedback = false;
+
     /**
      * Class constructor.
      *
      * @param assign $manager the instance manager
      * @param int[]|null $userids the user ids to download.
+     * @param bool $feedback downloading feedback?
      */
-    public function __construct(assign $manager, ?array $userids = null) {
+    public function __construct(assign $manager, ?array $userids = null, $feedback = false) {
         $this->manager = $manager;
         $this->userids = $userids;
         $this->instance = $manager->get_instance();
@@ -78,6 +82,7 @@ class downloader {
         if ($this->groupmode) {
             $this->groupid = groups_get_activity_group($cm, true);
         }
+        $this->feedback = $feedback;
     }
 
     /**
@@ -140,7 +145,12 @@ class downloader {
         }
         $this->prefixes[$prefix] = $student->id;
 
-        foreach ($this->manager->get_submission_plugins() as $plugin) {
+        if ($this->feedback === true) {
+            $plugin_type = $this->manager->get_feedback_plugins();
+        } else {
+            $plugin_type = $this->manager->get_submission_plugins();
+        }
+        foreach ($plugin_type as $plugin) {
             if (!$plugin->is_enabled() || !$plugin->is_visible()) {
                 continue;
             }
@@ -283,6 +293,10 @@ class downloader {
             $filenameparts[] = format_string(groups_get_group_name($this->groupid), true, ['context' => $manager->get_context()]);
         }
         $filenameparts[] = $manager->get_course_module()->id;
+
+        if ($this->feedback === true) {
+            $filenameparts[] = 'feedback';
+        }
 
         return clean_filename(implode('-', $filenameparts). '.zip');
     }
