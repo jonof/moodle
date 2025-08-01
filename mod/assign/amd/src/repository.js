@@ -38,6 +38,7 @@ export const userFetch = (assignid, groupid) => {
             assignid: assignid,
             groupid: groupid,
             filter: '',
+            forusersearch: true,
         },
     };
     return ajax.call([request])[0];
