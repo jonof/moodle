@@ -2646,6 +2646,12 @@ class mod_assign_external extends \mod_assign\external\external_api {
                 'onlyids' => new external_value(PARAM_BOOL, 'Do not return all user fields', VALUE_DEFAULT, false),
                 'includeenrolments' => new external_value(PARAM_BOOL, 'Do return courses where the user is enrolled',
                                                           VALUE_DEFAULT, true),
+                'forusersearch' => new external_value(
+                    PARAM_BOOL,
+                    'Return only the fields useful for user search',
+                    VALUE_DEFAULT,
+                    false
+                ),
                 'tablesort' => new external_value(
                     PARAM_BOOL,
                     'Apply current user table sorting preferences.',
@@ -2667,6 +2673,7 @@ class mod_assign_external extends \mod_assign\external\external_api {
      * @param int $limit Maximum number of records to return
      * @param bool $onlyids Only return user ids.
      * @param bool $includeenrolments Return courses where the user is enrolled.
+     * @param bool $forusersearch Only return fields useful for searching for users.
      * @param bool $tablesort Apply current user table sorting params from the grading table.
      * @param bool $marking Are we marking instead of grading?
      * @return array of warnings and status result
@@ -2681,6 +2688,7 @@ class mod_assign_external extends \mod_assign\external\external_api {
         $limit,
         $onlyids,
         $includeenrolments,
+        $forusersearch,
         $tablesort,
         $marking
     ) {
@@ -2698,6 +2706,7 @@ class mod_assign_external extends \mod_assign\external\external_api {
                                                 'limit' => $limit,
                                                 'onlyids' => $onlyids,
                                                 'includeenrolments' => $includeenrolments,
+                                                'forusersearch' => $forusersearch,
                                                 'tablesort' => $tablesort,
                                                 'marking' => $marking,
                                             ));
@@ -2710,6 +2719,10 @@ class mod_assign_external extends \mod_assign\external\external_api {
         $assign->set_is_marking($marking);
         $assign->require_view_grades();
 
+        if ($params['forusersearch']) {
+            \core\session\manager::write_close();
+        }
+
         $participants = array();
         $coursegroups = [];
         if (groups_group_visible($params['groupid'], $course, $cm)) {
@@ -2717,14 +2730,23 @@ class mod_assign_external extends \mod_assign\external\external_api {
             $coursegroups = groups_get_all_groups($course->id);
         }
 
-        $userfields = user_get_default_fields();
-        if (!$params['includeenrolments']) {
-            // Remove enrolled courses from users fields to be returned.
-            $key = array_search('enrolledcourses', $userfields);
-            if ($key !== false) {
-                unset($userfields[$key]);
-            } else {
-                throw new moodle_exception('invaliduserfield', 'error', '', 'enrolledcourses');
+        if ($params['forusersearch']) {
+            $userfields = [
+                'id', 'profileimageurlsmall', 'profileimageurl',
+                // Match the set of fields named in AMD module core_user/comboboxsearch/user's UserSearch.getStringMap().
+                'username', 'fullname', 'firstname', 'lastname', 'email', 'city', 'country', 'department',
+                'institution', 'idnumber', 'phone1', 'phone2',
+            ];
+        } else {
+            $userfields = user_get_default_fields();
+            if (!$params['includeenrolments']) {
+                // Remove enrolled courses from users fields to be returned.
+                $key = array_search('enrolledcourses', $userfields);
+                if ($key !== false) {
+                    unset($userfields[$key]);
+                } else {
+                    throw new moodle_exception('invaliduserfield', 'error', '', 'enrolledcourses');
+                }
             }
         }
 

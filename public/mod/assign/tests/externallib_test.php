@@ -2819,7 +2819,7 @@ final class externallib_test extends \mod_assign\externallib_advanced_testcase {
         $DB->update_record('user', $student);
 
         $this->setUser($teacher);
-        $participants = mod_assign_external::list_participants($assignment->id, 0, '', 0, 0, false, true, true, false);
+        $participants = mod_assign_external::list_participants($assignment->id, 0, '', 0, 0, false, true, false, true, false);
         $participants = external_api::clean_returnvalue(mod_assign_external::list_participants_returns(), $participants);
         $this->assertCount(1, $participants);
 
@@ -2838,10 +2838,53 @@ final class externallib_test extends \mod_assign\externallib_advanced_testcase {
         $this->assertEquals('', $participant['submissionstatus']);
         $this->assertArrayHasKey('enrolledcourses', $participant);
 
-        $participants = mod_assign_external::list_participants($assignment->id, 0, '', 0, 0, false, false, true, false);
+        $participants = mod_assign_external::list_participants($assignment->id, 0, '', 0, 0, false, false, false, true, false);
         $participants = external_api::clean_returnvalue(mod_assign_external::list_participants_returns(), $participants);
         // Check that the list of courses the participant is enrolled is not returned.
         $participant = $participants[0];
+        $this->assertArrayNotHasKey('enrolledcourses', $participant);
+    }
+
+    /**
+     * Test for mod_assign_external::list_participants() when called to prepare user search information.
+     *
+     * @covers \mod_assign_external::list_participants
+     * @throws coding_exception
+     */
+    public function test_list_participants_user_info_for_searching(): void {
+        global $CFG, $DB;
+        $this->resetAfterTest(true);
+        $CFG->showuseridentity = 'idnumber,email,phone1,phone2,department,institution';
+
+        $data = $this->create_assign_with_student_and_teacher();
+        $assignment = $data['assign'];
+        $teacher = $data['teacher'];
+        $student = $data['student'];
+
+        $this->setUser($teacher);
+        $participants = mod_assign_external::list_participants(
+            $assignment->id,
+            0,
+            '',
+            0,
+            0,
+            false,
+            true,
+            true,
+            true,
+            false
+        );
+        $participants = external_api::clean_returnvalue(mod_assign_external::list_participants_returns(), $participants);
+        $this->assertCount(1, $participants);
+
+        $response = external_api::clean_returnvalue(mod_assign_external::list_participants_returns(), $participants);
+        $this->assertEquals($response, $participants);
+
+        // Check that certain unnecessary information is excluded from the participant data.
+        $participant = $participants[0];
+        $this->assertArrayNotHasKey('firstaccess', $participant);
+        $this->assertArrayNotHasKey('lastaccess', $participant);
+        $this->assertArrayNotHasKey('roles', $participant);
         $this->assertArrayNotHasKey('enrolledcourses', $participant);
     }
 
@@ -2914,7 +2957,18 @@ final class externallib_test extends \mod_assign\externallib_advanced_testcase {
         $this->setUser($teacher);
 
         // Test mod_assign_external::list_participants.
-        $participants = mod_assign_external::list_participants($assignmodule->id, $group->id, '', 0, 0, false, true, true, false);
+        $participants = mod_assign_external::list_participants(
+            $assignmodule->id,
+            $group->id,
+            '',
+            0,
+            0,
+            false,
+            true,
+            false,
+            true,
+            false
+        );
         $participants = external_api::clean_returnvalue(mod_assign_external::list_participants_returns(), $participants);
         $this->assertEquals($group->id, $participants[0]['groupid']);
         $this->assertEquals(format_string($gname, true), $participants[0]['groupname']);
