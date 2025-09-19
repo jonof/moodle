@@ -45,7 +45,6 @@ admin_externalpage_setup('reportcourseoverview', '', null, '', array('pagelayout
 echo $OUTPUT->header();
 
 $course = get_site();
-stats_check_uptodate($course->id);
 
 $strreports = get_string('reports');
 $strcourseoverview = get_string('courseoverview');

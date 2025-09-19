@@ -77,7 +77,7 @@ function report_stats_timeoptions($mode) {
 }
 
 function report_stats_report($course, $report, $mode, $user, $roleid, $time) {
-    global $CFG, $DB, $OUTPUT;
+    global $CFG, $DB, $OUTPUT, $USER;
 
     if ($user) {
         $userid = $user->id;
@@ -85,36 +85,55 @@ function report_stats_report($course, $report, $mode, $user, $roleid, $time) {
         $userid = 0;
     }
 
-    $fields = 'c.id,c.shortname,c.visible';
-    $ccselect = ', ' . context_helper::get_preload_record_columns_sql('ctx');
-    $ccjoin = "LEFT JOIN {context} ctx ON (ctx.instanceid = c.id AND ctx.contextlevel = :contextlevel)";
-    $sortstatement = 'ORDER BY c.shortname';
+    $filtersql = '';
+    $filterparams = [];
+    if (!is_siteadmin()) {
+        list ($statscapsql, $statscapparams) = \core\access\get_user_capability_course_helper::get_sql(
+            $USER->id, 'report/stats:view');
+        if ($statscapsql) {
+            $filtersql = "WHERE ($statscapsql) AND (c.visible > 0 ";
+            $filterparams = $statscapparams;
 
-    $sql = "SELECT $fields $ccselect FROM {course} c $ccjoin $sortstatement";
-
-    $params = array();
-    $params['contextlevel'] = CONTEXT_COURSE;
-
-    $courses = $DB->get_recordset_sql($sql, $params);
-
-    $courseoptions = array();
-
-    foreach ($courses as $c) {
-        context_helper::preload_from_record($c);
-        $context = context_course::instance($c->id);
-
-        if (has_capability('report/stats:view', $context)) {
-            if (isset($c->visible) && $c->visible <= 0) {
-                // For hidden courses, require visibility check.
-                if (!has_capability('moodle/course:viewhiddencourses', $context)) {
-                    continue;
-                }
+            list ($viewhiddencapsql, $viewhiddencapparams) = \core\access\get_user_capability_course_helper::get_sql(
+                $USER->id, 'moodle/course:viewhiddencourses');
+            if ($viewhiddencapsql) {
+                $filtersql .= "OR ($viewhiddencapsql)";
+                $filterparams = array_merge($filterparams, $viewhiddencapparams);
             }
-            $courseoptions[$c->id] = format_string($c->shortname, true, array('context' => $context));
+
+            $filtersql .= ')';
+        } else {
+            $filtersql = "WHERE 1=0"; // No report/stats:view capability, return no results.
         }
     }
 
-    $courses->close();
+    $courseoptions = [];
+
+    $preloadctxsql = context_helper::get_preload_record_columns_sql('x');
+    $coursecount = $DB->count_records_sql("
+            SELECT COUNT(*)
+              FROM {course} c
+               JOIN {context} x ON c.id = x.instanceid AND x.contextlevel = ?
+            $filtersql",
+            array_merge([CONTEXT_COURSE], $filterparams));
+    if ($coursecount == 0 || $coursecount > COURSE_MAX_COURSES_PER_DROPDOWN) {
+        $courseoptions[$course->id] = format_string($course->shortname, true, ['context' => context_course::instance($course->id)]);
+    } else {
+        $courses = $DB->get_recordset_sql("
+                SELECT c.id, c.shortname, {$preloadctxsql}
+                  FROM {course} c
+                   JOIN {context} x ON c.id = x.instanceid AND x.contextlevel = ?
+                $filtersql
+                ORDER BY c.shortname", array_merge([CONTEXT_COURSE], $filterparams));
+
+        foreach ($courses as $c) {
+            context_helper::preload_from_record($c);
+            $context = context_course::instance($c->id);
+            $courseoptions[$c->id] = format_string($c->shortname, true, array('context' => $context));
+        }
+
+        $courses->close();
+    }
 
     $reportoptions = stats_get_report_options($course->id, $mode);
     $timeoptions = report_stats_timeoptions($mode);
@@ -367,8 +386,6 @@ function report_stats_print_chart($courseid, $report, $time, $mode, $userid = 0,
 
     $course = $DB->get_record("course", array("id" => $courseid), '*', MUST_EXIST);
     $coursecontext = context_course::instance($course->id);
-
-    stats_check_uptodate($course->id);
 
     $param = stats_get_parameters($time, $report, $course->id, $mode, $roleid);
 

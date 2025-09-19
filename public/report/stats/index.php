@@ -74,7 +74,6 @@ navigation_node::override_active_url(new moodle_url('/report/stats/index.php', a
 $event = \report_stats\event\report_viewed::create(array('context' => $context, 'relateduserid' => $userid,
         'other' => array('report' => $report, 'time' => $time, 'mode' => $mode)));
 $event->trigger();
-stats_check_uptodate($course->id);
 
 if ($course->id == SITEID) {
     admin_externalpage_setup('reportstats', '', null, '', array('pagelayout'=>'report'));
