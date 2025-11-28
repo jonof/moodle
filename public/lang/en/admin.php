@@ -799,6 +799,7 @@ $string['iplookupgeoplugin'] = 'The <a href="https://www.geoplugin.com">geoPlugi
 $string['iplookupinfo'] = 'The free online NetGeo server is used to look up IP address locations. The database is not maintained any more though, and may return incorrect data. Installing a local copy of a GeoIP database from MaxMind is recommended.<br />
 If a Google Maps API V3 key is provided, IP address location is displayed using Google Maps. You need a Google account and to apply for a Google Maps API key. If no Google Maps API V3 key is provided, IP address location is displayed using OpenStreetMap.';
 $string['iplookupmaxmindnote'] = 'This product includes GeoIP City data created by MaxMind, available from <a href="https://www.maxmind.com">https://www.maxmind.com</a>.';
+$string['iplookupdbipnote'] = 'This product includes IP Geolocation data by DB-IP, available from <a href="https://db-ip.com">https://db-ip.com</a>.';
 $string['iscustomadminwarnings'] = 'It has been detected that your site is using a custom admin directory. This feature is no longer supported and will be removed after Moodle 4.2.';
 $string['ishttpswarning'] = 'It has been detected that your site is not secured using HTTPS. It is strongly recommended to migrate your site to HTTPS for increased security and improved integration with other systems.';
 $string['keeptagnamecase'] = 'Keep tag name casing';

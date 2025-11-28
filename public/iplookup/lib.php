@@ -64,7 +64,13 @@ function iplookup_find_location($ip) {
 
         $info['longitude'] = $record->location->longitude;
         $info['latitude'] = $record->location->latitude;
-        $info['note'] = get_string('iplookupmaxmindnote', 'admin');
+
+        $databasetype = $reader->metadata()->databaseType;
+        if (strpos($databasetype, 'GeoIP2-') === 0 || strpos($databasetype, 'GeoLite2-') === 0) {
+            $info['note'] = get_string('iplookupmaxmindnote', 'admin');
+        } else if (strpos($databasetype, 'DBIP-') === 0) {
+            $info['note'] = get_string('iplookupdbipnote', 'admin');
+        }
 
         return $info;
 
