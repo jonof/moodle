@@ -2674,10 +2674,10 @@ class assign {
         $params = [
             'assignid' => $this->get_instance()->id,
             'submitted' => ASSIGN_SUBMISSION_STATUS_SUBMITTED,
+            'gradenotset' => ASSIGN_GRADE_NOT_SET,
         ];
         [$esql, $eparams] = get_enrolled_sql($this->get_context(), '', $groupids, true);
         $params += $eparams;
-        $sqlscalegrade = $this->get_instance()->grade < 0 ? ' OR g.grade = ' . ASSIGN_GRADE_NOT_SET : '';
         $sql = '     FROM {assign_submission} s
                 LEFT JOIN {assign_grades} g ON
                           s.assignment = g.assignment AND
@@ -2688,7 +2688,8 @@ class assign {
                           s.status = :submitted AND
                           s.latest = 1 AND
                           s.timemodified IS NOT NULL AND
-                          (s.timemodified >= g.timemodified OR g.timemodified IS NULL OR g.grade IS NULL ' . $sqlscalegrade . ')';
+                          (s.timemodified >= g.timemodified OR g.timemodified IS NULL OR
+                           g.grade IS NULL OR g.grade = :gradenotset)';
 
         if ($this->get_instance()->teamsubmission) {
             // For team submissions, only count the teams (instead of the participants).

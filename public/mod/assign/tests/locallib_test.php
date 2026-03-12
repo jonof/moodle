@@ -233,6 +233,44 @@ final class locallib_test extends \advanced_testcase {
         $this->assertStringContainsString(get_string('nothingtodisplay'), $output);
     }
 
+    /**
+     * Test that the grading table 'requires grading' filter is accurate when marking workflow
+     * state has been set in bulk.
+     */
+    public function test_gradingtable_filter_by_requiresgrading_batch_marking_workflow_state(): void {
+        global $PAGE;
+
+        $this->resetAfterTest();
+
+        // Ensures that 's.timemodified >= g.timemodified' does not evaluate
+        // true within assign_grading_table::__construct().
+        $this->mock_clock_with_incrementing();
+
+        $course = $this->getDataGenerator()->create_course();
+        $teacher = $this->getDataGenerator()->create_and_enrol($course, 'editingteacher');
+        $student = $this->getDataGenerator()->create_and_enrol($course, 'student');
+
+        $assign = $this->create_instance($course, [
+            'assignsubmission_onlinetext_enabled' => 1,
+        ]);
+
+        $this->add_submission($student, $assign);
+        $this->submit_for_grading($student, $assign);
+
+        $this->setUser($teacher);
+
+        $assign->testable_process_set_batch_marking_workflow_state($student->id, ASSIGN_MARKING_WORKFLOW_STATE_INMARKING);
+
+        $PAGE->set_url(new \moodle_url('/mod/assign/view.php', [
+            'id' => $assign->get_course_module()->id,
+            'action' => 'grading',
+        ]));
+
+        // Render the table with the requires grading filter.
+        $gradingtable = new \assign_grading_table($assign, 1, ASSIGN_FILTER_REQUIRE_GRADING, 0, true);
+        $output = $assign->get_renderer()->render($gradingtable);
+        $this->assertEquals(true, strpos($output, fullname($student)));
+    }
 
     /**
      * Test submissions with extension date.
@@ -1464,6 +1502,47 @@ final class locallib_test extends \advanced_testcase {
         $this->submit_for_grading($student, $assign);
 
         $this->assertEquals(0, $assign->count_grades());
+        $this->assertEquals(1, $assign->count_submissions());
+        $this->assertEquals(1, $assign->count_submissions(true));
+        $this->assertEquals(1, $assign->count_submissions_need_grading());
+        $this->assertEquals(0, $assign->count_submissions_with_status(ASSIGN_SUBMISSION_STATUS_NEW));
+        $this->assertEquals(0, $assign->count_submissions_with_status(ASSIGN_SUBMISSION_STATUS_DRAFT));
+        $this->assertEquals(1, $assign->count_submissions_with_status(ASSIGN_SUBMISSION_STATUS_SUBMITTED));
+        $this->assertEquals(0, $assign->count_submissions_with_status(ASSIGN_SUBMISSION_STATUS_REOPENED));
+    }
+
+    /**
+     * Test that counting submissions is accurate when marking workflow state has been set in bulk.
+     */
+    public function test_count_submissions_submitted_batch_marking_workflow_state(): void {
+        $this->resetAfterTest();
+
+        // Ensures that 's.timemodified >= g.timemodified' does not evaluate
+        // true within assign::count_submissions_need_grading_with_groups().
+        $this->mock_clock_with_incrementing();
+
+        $course = $this->getDataGenerator()->create_course();
+        $teacher = $this->getDataGenerator()->create_and_enrol($course, 'editingteacher');
+        $student = $this->getDataGenerator()->create_and_enrol($course, 'student');
+
+        $assign = $this->create_instance($course, [
+            'assignsubmission_onlinetext_enabled' => 1,
+        ]);
+
+        $this->add_submission($student, $assign);
+        $this->submit_for_grading($student, $assign);
+
+        $this->setUser($teacher);
+
+        $assign->testable_process_set_batch_marking_workflow_state($student->id, ASSIGN_MARKING_WORKFLOW_STATE_INMARKING);
+
+        // Workflow state is set in user flags, but it also causes the grade to be initialised
+        // to the 'not set' sentinel value as a side-effect.
+        $grade = $assign->get_user_grade($student->id, false);
+        $this->assertIsObject($grade);
+        $this->assertEquals(ASSIGN_GRADE_NOT_SET, $grade->grade);
+
+        $this->assertEquals(1, $assign->count_grades());
         $this->assertEquals(1, $assign->count_submissions());
         $this->assertEquals(1, $assign->count_submissions(true));
         $this->assertEquals(1, $assign->count_submissions_need_grading());
